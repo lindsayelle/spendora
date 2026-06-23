@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { AppButton } from "@/components/AppButton";
 import { Chip } from "@/components/Chip";
+import { DatePickerField } from "@/components/DatePickerField";
 import { TextField } from "@/components/TextField";
 import type { Category, CurrencyCode, Transaction } from "@/types";
 import { todayISO } from "@/utils/date";
@@ -85,7 +86,7 @@ export function TransactionForm({ categories, currency, initial, buttonLabel = "
     <View style={styles.form}>
       <View style={styles.row}>
         <TextField label="Amount" value={amount} onChangeText={setAmount} placeholder="38.50" keyboardType="decimal-pad" />
-        <TextField label="Date" value={date} onChangeText={setDate} placeholder="2026-06-23" />
+        <DatePickerField label="Date" value={date} onChange={setDate} disableFuture />
       </View>
       <TextField label="Description" value={description} onChangeText={setDescription} placeholder="Lunch at cafe" maxLength={120} />
       <View style={styles.categoryBlock}>

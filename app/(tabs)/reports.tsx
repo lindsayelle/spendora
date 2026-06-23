@@ -8,7 +8,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { PieChart } from "@/components/PieChart";
 import { Screen } from "@/components/Screen";
 import { SectionTitle } from "@/components/SectionTitle";
-import { TextField } from "@/components/TextField";
+import { MonthPickerField } from "@/components/DatePickerField";
 import { TransactionItem } from "@/components/TransactionItem";
 import { categoryBreakdown, exportMonthlyReport } from "@/features/reports/exportReport";
 import { useAppStore } from "@/stores/app-store";
@@ -49,7 +49,7 @@ export default function ReportsScreen() {
         <SectionTitle>Month</SectionTitle>
         <View style={styles.monthRow}>
           <AppButton label="Previous" variant="secondary" icon="chevron-back-outline" onPress={() => setMonth(format(subMonths(parseISO(`${month}-01`), 1), "yyyy-MM"))} />
-          <TextField label="Selected Month" value={month} onChangeText={setMonth} placeholder="2026-06" />
+          <MonthPickerField label="Selected Month" value={month} onChange={setMonth} />
           <AppButton label="Next" variant="secondary" icon="chevron-forward-outline" onPress={() => setMonth(format(addMonths(parseISO(`${month}-01`), 1), "yyyy-MM"))} />
         </View>
       </Card>

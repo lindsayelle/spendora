@@ -6,7 +6,7 @@ import { Chip } from "@/components/Chip";
 import { LoadingState } from "@/components/LoadingState";
 import { Screen } from "@/components/Screen";
 import { SectionTitle } from "@/components/SectionTitle";
-import { TextField } from "@/components/TextField";
+import { DatePickerField } from "@/components/DatePickerField";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useAppStore } from "@/stores/app-store";
@@ -57,8 +57,8 @@ export default function TransactionsScreen() {
       <Card style={styles.block}>
         <SectionTitle>Filters</SectionTitle>
         <View style={styles.filterRow}>
-          <TextField label="From" value={from} onChangeText={setFrom} placeholder="2026-06-23" />
-          <TextField label="To" value={to} onChangeText={setTo} placeholder="2026-06-23" />
+          <DatePickerField label="From" value={from} onChange={setFrom} />
+          <DatePickerField label="To" value={to} onChange={setTo} />
         </View>
         <View style={styles.chips}>
           <Chip label="All" selected={categoryId === "all"} onPress={() => setCategoryId("all")} />
