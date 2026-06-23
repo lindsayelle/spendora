@@ -77,7 +77,6 @@ export function TransactionForm({ categories, currency, initial, buttonLabel = "
     if (!initial) {
       setAmount("");
       setDescription("");
-      setDate(todayISO());
     }
     setSaving(false);
   }

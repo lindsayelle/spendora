@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   parent_category_id TEXT NULL,
   is_default INTEGER NOT NULL DEFAULT 0,
+  color TEXT NOT NULL DEFAULT '#177E73',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

@@ -12,6 +12,8 @@ import { TransactionItem } from "@/components/TransactionItem";
 import { useAppStore } from "@/stores/app-store";
 import type { Transaction } from "@/types";
 import { isDateInRange, todayISO } from "@/utils/date";
+import { totalForTransactions } from "@/utils/insights";
+import { formatMoney } from "@/utils/money";
 import { palette } from "@/utils/theme";
 
 export default function TransactionsScreen() {
@@ -34,6 +36,8 @@ export default function TransactionsScreen() {
       return dateMatch && categoryMatch;
     });
   }, [transactions, from, to, categoryId]);
+
+  const filteredTotal = totalForTransactions(filtered);
 
   if (!ready || !settings) return <LoadingState />;
 
@@ -69,7 +73,13 @@ export default function TransactionsScreen() {
       </Card>
 
       <Card>
-        <SectionTitle>History</SectionTitle>
+        <View style={styles.historyHeader}>
+          <SectionTitle>History</SectionTitle>
+          <View style={styles.filteredTotal}>
+            <Text style={[styles.totalLabel, { color: colors.muted }]}>Filtered total</Text>
+            <Text style={[styles.totalValue, { color: colors.text }]}>{formatMoney(filteredTotal, settings.mainCurrency)}</Text>
+          </View>
+        </View>
         {filtered.length ? (
           filtered.map((transaction) => (
             <TransactionItem
@@ -102,6 +112,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8
+  },
+  historyHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+    flexWrap: "wrap"
+  },
+  filteredTotal: {
+    alignItems: "flex-end",
+    marginBottom: 10
+  },
+  totalLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
+  totalValue: {
+    fontSize: 22,
+    fontWeight: "900"
   },
   empty: {
     paddingVertical: 18,

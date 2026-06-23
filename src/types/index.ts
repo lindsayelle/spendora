@@ -12,6 +12,7 @@ export type Category = {
   name: string;
   parentCategoryId: string | null;
   isDefault: boolean;
+  color: string;
   createdAt: string;
   updatedAt: string;
 };

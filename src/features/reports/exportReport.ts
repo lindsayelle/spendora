@@ -6,6 +6,7 @@ import type { Category, CurrencyCode, Transaction } from "@/types";
 import { categoryName, totalForTransactions } from "@/utils/insights";
 import { displayDate, displayMonth } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
+import { categoryColors } from "@/utils/theme";
 
 export function categoryBreakdown(transactions: Transaction[], categories: Category[]) {
   const totals = new Map<string, number>();
@@ -13,7 +14,10 @@ export function categoryBreakdown(transactions: Transaction[], categories: Categ
     totals.set(transaction.categoryId, (totals.get(transaction.categoryId) ?? 0) + transaction.amountMinor);
   });
   return [...totals.entries()]
-    .map(([categoryId, value]) => ({ label: categoryName(categories, categoryId), value }))
+    .map(([categoryId, value], index) => {
+      const category = categories.find((item) => item.id === categoryId);
+      return { label: categoryName(categories, categoryId), value, color: category?.color ?? categoryColors[index % categoryColors.length] };
+    })
     .sort((a, b) => b.value - a.value);
 }
 

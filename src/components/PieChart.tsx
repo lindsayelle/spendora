@@ -8,6 +8,7 @@ import type { CurrencyCode } from "@/types";
 type Slice = {
   label: string;
   value: number;
+  color?: string;
 };
 
 function polarToCartesian(cx: number, cy: number, radius: number, angle: number) {
@@ -47,7 +48,7 @@ export function PieChart({ slices, currency }: { slices: Slice[]; currency: Curr
             const portion = slice.value / total * 360;
             const path = arcPath(110, 110, 96, angle, angle + portion);
             angle += portion;
-            return <Path key={slice.label} d={path} fill={categoryColors[index % categoryColors.length]} />;
+            return <Path key={slice.label} d={path} fill={slice.color ?? categoryColors[index % categoryColors.length]} />;
           })}
           <Circle cx={110} cy={110} r={52} fill={colors.surface} />
         </G>
@@ -55,7 +56,7 @@ export function PieChart({ slices, currency }: { slices: Slice[]; currency: Curr
       <View style={styles.legend}>
         {slices.map((slice, index) => (
           <View key={slice.label} style={styles.legendRow}>
-            <View style={[styles.dot, { backgroundColor: categoryColors[index % categoryColors.length] }]} />
+            <View style={[styles.dot, { backgroundColor: slice.color ?? categoryColors[index % categoryColors.length] }]} />
             <Text style={[styles.legendLabel, { color: colors.text }]} numberOfLines={1}>{slice.label}</Text>
             <Text style={[styles.legendAmount, { color: colors.muted }]}>{formatMoney(slice.value, currency)}</Text>
           </View>

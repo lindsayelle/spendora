@@ -3,6 +3,7 @@ import * as SQLite from "expo-sqlite";
 
 import type { AppData, Budget, Category, CurrencyCode, Settings, Transaction } from "@/types";
 import { makeId } from "@/utils/ids";
+import { categoryColors } from "@/utils/theme";
 import { schemaSql } from "@/db/schema";
 
 const storageKey = "spendora.v1";
@@ -36,13 +37,21 @@ function initialSettings(): Settings {
 
 function defaultCategories(): Category[] {
   const now = nowIso();
-  return defaultCategoryNames.map((name) => ({
+  return defaultCategoryNames.map((name, index) => ({
     id: `default_${name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
     name,
     parentCategoryId: null,
     isDefault: true,
+    color: categoryColors[index % categoryColors.length],
     createdAt: now,
     updatedAt: now
+  }));
+}
+
+function normalizeCategories(categories: Category[]) {
+  return categories.map((category, index) => ({
+    ...category,
+    color: category.color ?? categoryColors[index % categoryColors.length]
   }));
 }
 
@@ -60,6 +69,14 @@ async function getDb() {
   return dbPromise;
 }
 
+async function migrateCategoryColor(db: SQLiteDatabase) {
+  const columns = await db.getAllAsync<Record<string, unknown>>("PRAGMA table_info(categories)");
+  const hasColor = columns.some((column) => String(column.name) === "color");
+  if (!hasColor) {
+    await db.runAsync("ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#177E73'");
+  }
+}
+
 function getLocalData(): AppData {
   if (typeof window === "undefined" || !window.localStorage) return emptyData();
   const raw = window.localStorage.getItem(storageKey);
@@ -67,7 +84,7 @@ function getLocalData(): AppData {
   const parsed = JSON.parse(raw) as AppData;
   return {
     settings: parsed.settings ?? initialSettings(),
-    categories: parsed.categories?.length ? parsed.categories : defaultCategories(),
+    categories: parsed.categories?.length ? normalizeCategories(parsed.categories) : defaultCategories(),
     transactions: parsed.transactions ?? [],
     budgets: parsed.budgets ?? []
   };
@@ -94,6 +111,7 @@ function rowToCategory(row: Record<string, unknown>): Category {
     name: String(row.name),
     parentCategoryId: row.parent_category_id ? String(row.parent_category_id) : null,
     isDefault: Number(row.is_default) === 1,
+    color: row.color ? String(row.color) : categoryColors[0],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at)
   };
@@ -136,6 +154,7 @@ export async function initializeStorage() {
 
   const db = await getDb();
   await db.execAsync(schemaSql);
+  await migrateCategoryColor(db);
   const settings = initialSettings();
   await db.runAsync(
     "INSERT OR IGNORE INTO settings (id, main_currency, created_at, updated_at) VALUES (?, ?, ?, ?)",
@@ -147,11 +166,12 @@ export async function initializeStorage() {
 
   for (const category of defaultCategories()) {
     await db.runAsync(
-      "INSERT OR IGNORE INTO categories (id, name, parent_category_id, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT OR IGNORE INTO categories (id, name, parent_category_id, is_default, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       category.id,
       category.name,
       category.parentCategoryId,
       category.isDefault ? 1 : 0,
+      category.color,
       category.createdAt,
       category.updatedAt
     );
@@ -203,6 +223,7 @@ export async function upsertCategory(category: Partial<Category> & Pick<Category
     name: category.name.trim(),
     parentCategoryId: category.parentCategoryId ?? null,
     isDefault: category.isDefault ?? false,
+    color: category.color ?? existing?.color ?? categoryColors[0],
     createdAt: category.createdAt ?? existing?.createdAt ?? now,
     updatedAt: now
   };
@@ -218,11 +239,12 @@ export async function upsertCategory(category: Partial<Category> & Pick<Category
 
   const db = await getDb();
   await db.runAsync(
-    "INSERT OR REPLACE INTO categories (id, name, parent_category_id, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT OR REPLACE INTO categories (id, name, parent_category_id, is_default, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
     next.id,
     next.name,
     next.parentCategoryId,
     next.isDefault ? 1 : 0,
+    next.color,
     next.createdAt,
     next.updatedAt
   );

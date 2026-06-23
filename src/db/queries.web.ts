@@ -1,5 +1,6 @@
 import type { AppData, Budget, Category, CurrencyCode, Settings, Transaction } from "@/types";
 import { makeId } from "@/utils/ids";
+import { categoryColors } from "@/utils/theme";
 
 const storageKey = "spendora.v1";
 const settingsId = "settings_main";
@@ -28,13 +29,21 @@ function initialSettings(): Settings {
 
 function defaultCategories(): Category[] {
   const now = nowIso();
-  return defaultCategoryNames.map((name) => ({
+  return defaultCategoryNames.map((name, index) => ({
     id: `default_${name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
     name,
     parentCategoryId: null,
     isDefault: true,
+    color: categoryColors[index % categoryColors.length],
     createdAt: now,
     updatedAt: now
+  }));
+}
+
+function normalizeCategories(categories: Category[]) {
+  return categories.map((category, index) => ({
+    ...category,
+    color: category.color ?? categoryColors[index % categoryColors.length]
   }));
 }
 
@@ -54,7 +63,7 @@ function getLocalData(): AppData {
   const parsed = JSON.parse(raw) as AppData;
   return {
     settings: parsed.settings ?? initialSettings(),
-    categories: parsed.categories?.length ? parsed.categories : defaultCategories(),
+    categories: parsed.categories?.length ? normalizeCategories(parsed.categories) : defaultCategories(),
     transactions: parsed.transactions ?? [],
     budgets: parsed.budgets ?? []
   };
@@ -92,6 +101,7 @@ export async function upsertCategory(category: Partial<Category> & Pick<Category
     name: category.name.trim(),
     parentCategoryId: category.parentCategoryId ?? null,
     isDefault: category.isDefault ?? false,
+    color: category.color ?? existing?.color ?? categoryColors[0],
     createdAt: category.createdAt ?? existing?.createdAt ?? now,
     updatedAt: now
   };

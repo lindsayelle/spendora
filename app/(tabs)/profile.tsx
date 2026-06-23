@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native";
 
 import { AppButton } from "@/components/AppButton";
 import { Card } from "@/components/Card";
@@ -9,10 +9,10 @@ import { Screen } from "@/components/Screen";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TextField } from "@/components/TextField";
 import { useAppStore } from "@/stores/app-store";
-import type { Budget, CurrencyCode } from "@/types";
+import type { Budget, Category, CurrencyCode } from "@/types";
 import { todayISO } from "@/utils/date";
-import { formatMoney, minorToInput, parseMoneyToMinor, currencyOptions } from "@/utils/money";
-import { palette } from "@/utils/theme";
+import { currencyOptions, minorToInput, parseMoneyToMinor } from "@/utils/money";
+import { categoryColors, palette } from "@/utils/theme";
 
 type BudgetKey = "daily" | "weekday" | "weekend" | "weekly" | "monthly";
 
@@ -42,7 +42,9 @@ export default function ProfileScreen() {
   const deleteCategory = useAppStore((state) => state.deleteCategory);
   const [budgetInputs, setBudgetInputs] = useState<Record<BudgetKey, string>>({ daily: "", weekday: "", weekend: "", weekly: "", monthly: "" });
   const [categoryName, setCategoryName] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState(categoryColors[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const [message, setMessage] = useState("");
 
   const budgetByKey = useMemo(() => {
@@ -95,19 +97,34 @@ export default function ProfileScreen() {
     setMessage("Budget settings saved.");
   }
 
-  async function handleSaveCategory() {
+  async function handleCreateCategory() {
     const name = categoryName.trim();
     if (!name) return;
-    const existing = categories.find((category) => category.id === editingCategoryId);
     await saveCategory({
-      id: editingCategoryId ?? undefined,
       name,
-      isDefault: existing?.isDefault ?? false,
-      parentCategoryId: existing?.parentCategoryId ?? null,
-      createdAt: existing?.createdAt
+      color: newCategoryColor,
+      isDefault: false,
+      parentCategoryId: null
     });
     setCategoryName("");
+  }
+
+  async function handleRenameCategory(category: Category) {
+    const name = renameDraft.trim();
+    if (!name) return;
+    await saveCategory({
+      ...category,
+      name
+    });
     setEditingCategoryId(null);
+    setRenameDraft("");
+  }
+
+  async function handleColorChange(category: Category, color: string) {
+    await saveCategory({
+      ...category,
+      color
+    });
   }
 
   function canDeleteCategory(categoryId: string) {
@@ -156,28 +173,52 @@ export default function ProfileScreen() {
         <SectionTitle>Category Management</SectionTitle>
         <View style={styles.categoryForm}>
           <TextField
-            label={editingCategoryId ? "Rename Category" : "New Category"}
+            label="New Category"
             value={categoryName}
             onChangeText={setCategoryName}
             placeholder="Coffee"
             maxLength={40}
           />
-          <AppButton label={editingCategoryId ? "Rename" : "Create"} icon="add-outline" onPress={handleSaveCategory} />
-          {editingCategoryId ? <AppButton label="Cancel" variant="secondary" icon="close-outline" onPress={() => { setEditingCategoryId(null); setCategoryName(""); }} /> : null}
+          <ColorSwatches selectedColor={newCategoryColor} onSelect={setNewCategoryColor} />
+          <AppButton label="Create" icon="add-outline" onPress={handleCreateCategory} />
         </View>
         <View style={styles.categoryList}>
-          {categories.map((category) => (
-            <View key={category.id} style={[styles.categoryRow, { borderColor: colors.border }]}>
-              <View style={styles.categoryText}>
-                <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
-                <Text style={[styles.categoryMeta, { color: colors.muted }]}>{category.isDefault ? "Default category" : "Custom category"}</Text>
+          {categories.map((category) => {
+            const editing = editingCategoryId === category.id;
+            return (
+              <View key={category.id} style={[styles.categoryRow, { borderColor: colors.border }]}> 
+                <View style={styles.categoryText}>
+                  {editing ? (
+                    <TextInput
+                      value={renameDraft}
+                      onChangeText={setRenameDraft}
+                      maxLength={40}
+                      autoFocus
+                      style={[styles.inlineInput, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, color: colors.text }]}
+                    />
+                  ) : (
+                    <View style={styles.nameLine}>
+                      <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
+                      <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
+                    </View>
+                  )}
+                  <Text style={[styles.categoryMeta, { color: colors.muted }]}>{category.isDefault ? "Default category" : "Custom category"}</Text>
+                  <ColorSwatches selectedColor={category.color} onSelect={(color) => handleColorChange(category, color)} compact />
+                </View>
+                <View style={styles.categoryActions}>
+                  {editing ? (
+                    <>
+                      <AppButton label="Save" icon="checkmark-outline" onPress={() => handleRenameCategory(category)} />
+                      <AppButton label="Cancel" variant="secondary" icon="close-outline" onPress={() => { setEditingCategoryId(null); setRenameDraft(""); }} />
+                    </>
+                  ) : (
+                    <AppButton label="Rename" variant="secondary" icon="create-outline" onPress={() => { setEditingCategoryId(category.id); setRenameDraft(category.name); }} />
+                  )}
+                  {canDeleteCategory(category.id) ? <AppButton label="Delete" variant="danger" icon="trash-outline" onPress={() => deleteCategory(category.id)} /> : null}
+                </View>
               </View>
-              <View style={styles.categoryActions}>
-                {!category.isDefault ? <AppButton label="Rename" variant="secondary" icon="create-outline" onPress={() => { setEditingCategoryId(category.id); setCategoryName(category.name); }} /> : null}
-                {canDeleteCategory(category.id) ? <AppButton label="Delete" variant="danger" icon="trash-outline" onPress={() => deleteCategory(category.id)} /> : null}
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </Card>
 
@@ -187,6 +228,32 @@ export default function ProfileScreen() {
         <Text style={[styles.note, { color: colors.muted }]}>Native iPhone builds store data in SQLite. The localhost web preview stores offline data in this browser.</Text>
       </Card>
     </Screen>
+  );
+}
+
+function ColorSwatches({ selectedColor, onSelect, compact }: { selectedColor: string; onSelect: (color: string) => void; compact?: boolean }) {
+  const colors = palette(useColorScheme());
+  return (
+    <View style={[styles.swatches, compact ? styles.compactSwatches : null]}>
+      {categoryColors.map((color) => {
+        const selected = selectedColor === color;
+        return (
+          <Pressable
+            key={color}
+            accessibilityRole="button"
+            onPress={() => onSelect(color)}
+            style={({ pressed }) => [
+              styles.swatch,
+              {
+                backgroundColor: color,
+                borderColor: selected ? colors.text : colors.border,
+                transform: [{ scale: pressed || selected ? 1.12 : 1 }]
+              }
+            ]}
+          />
+        );
+      })}
+    </View>
   );
 }
 
@@ -234,20 +301,57 @@ const styles = StyleSheet.create({
     gap: 12
   },
   categoryText: {
-    flex: 1
+    flex: 1,
+    gap: 7,
+    minWidth: 0
+  },
+  nameLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  categoryDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6
   },
   categoryName: {
     fontWeight: "800",
     fontSize: 16
   },
+  inlineInput: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    minHeight: 40,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    fontWeight: "800",
+    maxWidth: 360
+  },
   categoryMeta: {
-    marginTop: 3
+    marginTop: 0
+  },
+  swatches: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    minWidth: 180
+  },
+  compactSwatches: {
+    maxWidth: 260
+  },
+  swatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2
   },
   categoryActions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    justifyContent: "flex-end"
+    justifyContent: "flex-end",
+    alignContent: "flex-start"
   },
   privacy: {
     fontSize: 16,
