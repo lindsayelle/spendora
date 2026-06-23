@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Expo and local build output
+.expo/
+dist/
+build/
+web-build/
+
+# Native build output
+ios/
+android/
+
+# Generated Expo types
+expo-env.d.ts
+
+# Environment and local machine files
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Source requirements document
+Spendora Software Requirements.pdf
