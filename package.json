@@ -28,11 +28,12 @@
     "react-native-screens": "latest",
     "react-native-svg": "latest",
     "react-native-web": "latest",
-    "zustand": "latest",
-    "zod": "latest"
+    "zod": "latest",
+    "zustand": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
+    "babel-plugin-transform-flow-enums": "^0.0.2",
     "typescript": "latest"
   }
 }
